@@ -83,7 +83,13 @@ def main():
     parser_code.add_argument("--json", help="Specify the JSON file.")
     parser_code.add_argument("--name", help="Specify the name of the account.")
     parser_code.add_argument("--secret", help="Specify the secret key for 2FA.")
-    
+
+    # Nuke parser
+    parser_nuke = subparsers.add_parser("nuke", help="Remove all 2FA objects from the JSON *AND* TXT files.")
+    parser_nuke.add_argument("--json", help="Specify the JSON file.")
+    parser_nuke.add_argument("--text", help="Specify the 2FA text file.")
+    parser_nuke.add_argument("-f", "--force", action="store_true", help="Force deletion of all objects that match.")
+
     # Parse arguments
 
     args = parser.parse_args()
@@ -147,9 +153,9 @@ def main():
         try:
             return_code = tool.unset_file_directory(json=args.json, text=args.text)
             if return_code == 0:
-                print("Successfully set file location.")
+                print("Successfully unset file location.")
             else:
-                print("Failed to set file location.")
+                print("Failed to unset file location.")
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)
@@ -168,6 +174,17 @@ def main():
             return_code = tool.code(json=args.json, name=args.name, secret=args.secret)
             if not return_code == 0:
                 print("Failed to generate 2FA code.")
+        except Exception as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+
+    elif args.command == "nuke":
+        try:
+            return_code = tool.nuke(json=args.json, text=args.text, force=args.force)
+            if not return_code == 0:
+                print("Failed to nuke 2FA objects.")
+            else:
+                print("Successfully nuked 2FA objects.")
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)

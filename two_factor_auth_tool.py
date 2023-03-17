@@ -24,9 +24,11 @@ class TwoFactorAuthTool:
         Returns:
             int: 0 if the operation is successful, 1 otherwise.
         """
+        json = test_json(json, config)
+        if not json:
+            return 1
         data_list = get_data_list(json, config)
         if data_list == 1:
-            print("Error. Something went wrong.")
             return 1
         duplicates = [data for data in data_list if 
             (data["name"] == name and name is not None) or 
@@ -51,7 +53,7 @@ class TwoFactorAuthTool:
         data_list.append(obj)
         data_list.sort(key=lambda x: x["name"].lower())
 
-        write_file(json, JSON.dumps(data_list), config)
+        write_file(json, JSON.dumps(data_list))
 
         return 0
 
@@ -71,6 +73,12 @@ class TwoFactorAuthTool:
         Returns:
             int: 0 if the operation is successful, 1 otherwise.
         """
+        json = test_json(json, config)
+        if not json:
+            return 1
+        if not name and not issuer and not secret and not backup and not phrase:
+            print("Must specify name, issuer, secret, backup and/or phrase.")
+            return 1
         data_list = get_data_list(json, config)
         new_data_list = [data for data in data_list 
             if (not data.get("name") == name and name is not None) or 
@@ -83,7 +91,7 @@ class TwoFactorAuthTool:
             print("Too many objects removed. Pass -f to force.")
             return 1
 
-        write_file(json, JSON.dumps(new_data_list), config)
+        write_file(json, JSON.dumps(new_data_list))
         return 0
     
     def set_file_directory(self, text: str, json: str) -> int:
@@ -161,13 +169,13 @@ class TwoFactorAuthTool:
         
         for data in data_list:
             print(f"Name: {data['name']}")
-            if issuer or all:
+            if issuer or all and data.get("issuer"):
                 print(f"Issuer: {data['issuer']}")
-            if secret or all:
+            if secret or all and data.get("secret"):
                 print(f"Secret: {data['secret']}")
-            if backup or all:
+            if backup or all and data.get("backup"):
                 print(f"Backup: {data['backup']}")
-            if phrase or all:
+            if phrase or all and data.get("phrase"):
                 print(f"Phrase: {data['phrase']}")
             print()
 
@@ -184,9 +192,6 @@ class TwoFactorAuthTool:
         Returns:
             int: 0 if the operation is successful, 1 otherwise.
         """
-        if json is None or text is None:
-            print("No JSON/TXT file specified. Pass --json [FILE] --txt [FILE]")
-            return 1
         json = test_json(json, config)
         if not json:
             print("JSON file does not exist, or is not valid.")
@@ -225,7 +230,7 @@ class TwoFactorAuthTool:
             names += f"{name}\n" if name else ""
 
         TXT = f"\n{title('All')}\n\n{all_info}\n{div}{title('Secrets')}\n{secrets}\n{div}{title('Links')}\n{links}\n{div}{title('Backups')}\n{backups}\n{div}{title('Phrases')}\n{phrases}\n{div}{title('Names')}\n{names}\n{title('QR Codes')}\n{qrs}"
-        write_file(text, TXT, config)
+        write_file(text, TXT)
         return 0
     
     def get_qr(self, json: str, name: str, issuer: str, secret: str, backup: str, phrase: str):
@@ -302,3 +307,34 @@ class TwoFactorAuthTool:
             print(f'{data.get["name"]} Code: {code}')
 
         return 0
+
+    def nuke(self, json: str, text: str, force: bool) -> int:
+        """
+        Removes all 2FA information from the TXT *AND* JSON file.
+
+        Args:
+            force (bool): Flag to force removal of all 2FA information.
+
+        Returns:
+            int: 0 if the operation is successful, 1 otherwise.
+        """
+        json = test_json(json, config)
+        if not json:
+            print("JSON file does not exist, or is not valid.")
+            return 1
+
+        text = test_txt(text, config)
+        if not text:
+            print("TXT file does not exist, or is not valid.")
+            return 1
+        
+        if not force:
+            choice = input("Are you sure you want to remove all 2FA information from the TXT file and JSON file? (y/n)")
+            if choice.lower()!= "y":
+                print("Operation cancelled.")
+                return 1
+            write_file(json, JSON.dumps([]))
+            write_file(text, "")
+
+        return 0
+        

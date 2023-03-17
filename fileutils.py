@@ -21,7 +21,7 @@ def get_file_contents(file_dir: str) -> str:
     with open(file_dir, "r") as f:
         return f.read()
 
-def write_file(file_dir: str, new_contents: str, config):
+def write_file(file_dir: str, new_contents: str) -> int:
     """
     Writes new contents to a file.
 
@@ -29,10 +29,6 @@ def write_file(file_dir: str, new_contents: str, config):
         file_dir (str): The directory where the file is located.
         new_contents (str): The new contents to be written to the file.
     """
-    file_dir = file_dir or config.get_json_directory()
-    if file_dir is None:
-        print("Error: No file directory specified. Pass --json [FILE]")
-        return 1
     with open(file_dir, "w") as f:
         f.write(new_contents)
 
@@ -73,15 +69,15 @@ def test_txt(txt: str, config) -> int:
 
     if txt is None:
         print("No TXT file specified. Pass --txt [FILE]")
-        return 1
+        return None
     if not os.path.isfile(txt):
         print("File does not exist")
-        return 1
+        return None
     if not txt.endswith(".txt"):
         print("File is not valid TXT")
-        return 1
+        return None
     
-    return 0
+    return txt
 
 def gen_code(secret: str) -> str:
     totp = pyotp.TOTP(secret)
