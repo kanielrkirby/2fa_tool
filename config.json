@@ -1,4 +1,4 @@
 {
-  "json_directory": "/Volumes/VERACRYPT/2fa.json",
-  "txt_directory": "/Volumes/VERACRYPT/2fa.txt"
+  "json_directory": null,
+  "txt_directory": null
 }

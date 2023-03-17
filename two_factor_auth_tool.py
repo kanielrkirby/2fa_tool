@@ -263,7 +263,7 @@ class TwoFactorAuthTool:
             link = f"otpauth://totp/{data['name']}?secret={data['secret']}&issuer={data['issuer']}".replace(" ", "%20")
             qr = create_qr_code(link)
             print(f'{data["name"]}\n\n{qr}\n\n')
-            
+
         return 0
     
     def code(self, json: str, name: str, secret: str):
@@ -280,7 +280,7 @@ class TwoFactorAuthTool:
         """
         if secret is not None:
             code = gen_code(secret)
-            print(f'{name} Code: {code}')
+            print(f'Code: {code}')
             return 0
 
         json = test_json(json, config)
@@ -296,9 +296,9 @@ class TwoFactorAuthTool:
         if len(specified) == 0:
             print("Could not find 2FA information in the JSON file based on the name.")
             return 1
-            
+        
         for data in specified:
             code = gen_code(data["secret"])
-            print(f'{data["name"]} Code: {code}')
+            print(f'{data.get["name"]} Code: {code}')
 
         return 0
