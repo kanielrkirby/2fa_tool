@@ -304,7 +304,7 @@ class TwoFactorAuthTool:
         
         for data in specified:
             code = gen_code(data["secret"])
-            print(f'{data.get["name"]} Code: {code}')
+            print(f'{data["name"]} Code: {code}')
 
         return 0
 
