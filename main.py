@@ -12,7 +12,7 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="sub-command help")
 
     # Add parser
-    parser_add = subparsers.add_parser("add", help="Add a 2FA object to a JSON file. Requires JSON file.")
+    parser_add = subparsers.add_parser("add", help="Add a 2FA object to a JSON file.")
     parser_add.add_argument("--json", help="Specify the JSON file.")
     parser_add.add_argument("--name", help="Specify the name of the account.")
     parser_add.add_argument("--issuer",  help="Specify the issuer of the 2FA.")
@@ -22,7 +22,7 @@ def main():
     parser_add.add_argument("-f", "--force", action="store_true", help="Force the adding of duplicate data.")
 
     # Remove parser
-    parser_remove = subparsers.add_parser("remove", help="Remove a 2FA object from the JSON file. Requires JSON file.")
+    parser_remove = subparsers.add_parser("remove", help="Remove a 2FA object from the JSON file.")
     parser_remove.add_argument("--json", help="Specify the JSON file.")
     parser_remove.add_argument("--name", help="Specify the name of the account.")
     parser_remove.add_argument("--issuer", help="Specify the issuer of the 2FA.")
@@ -41,14 +41,14 @@ def main():
     parser_update.add_argument("--backup", help="Specify the backup codes for 2FA.")
     parser_update.add_argument("--phrase", help="Specify the phrase for 2FA (Like crypto wallet phrases).")
 
-    # Get parser
-    parser_get = subparsers.add_parser("get", help="Get a 2FA object from the JSON file. Requires JSON file.")
-    parser_get.add_argument("--json", help="Specify the JSON file.")
-    parser_get.add_argument("--name", help="Filter based on the name of the account.")
-    parser_get.add_argument("--issuer", help="Filter based on the issuer of the 2FA.")
-    parser_get.add_argument("--secret", help="Filter based on the secret key for 2FA.")
-    parser_get.add_argument("--backup", help="Filter based on the backup codes for 2FA.")
-    parser_get.add_argument("--phrase", help="Filter based on the phrase for 2FA (Like crypto wallet phrases).")
+    # Get QR parser
+    parser_get_qr = subparsers.add_parser("get-qr", help="Get the QR code for a 2FA object from the JSON file.")
+    parser_get_qr.add_argument("--json", help="Specify the JSON file.")
+    parser_get_qr.add_argument("--name", help="Get QR based on the name of the account.")
+    parser_get_qr.add_argument("--issuer", help="Get QR based on the issuer of the 2FA.")
+    parser_get_qr.add_argument("--secret", help="Get QR based on the secret key for 2FA.")
+    parser_get_qr.add_argument("--backup", help="Get QR based on the backup codes for 2FA.")
+    parser_get_qr.add_argument("--phrase", help="Get QR based on the phrase for 2FA (Like crypto wallet phrases).")
 
     # Set parser
     parser_set = subparsers.add_parser("set", help="Set the default location of the TXT and/or JSON files.")
@@ -63,9 +63,9 @@ def main():
         try:
             return_code = tool.add(json=args.json, name=args.name, issuer=args.issuer, secret=args.secret, backup=args.backup, phrase=args.phrase, force=args.force)
             if return_code == 0:
-                print("Successfully added 2FA information.")
+                print("Successfully added.")
             else:
-                print("Failed to add 2FA information.")
+                print("Failed to add.")
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)
@@ -74,9 +74,9 @@ def main():
         try:
             return_code = tool.remove(json=args.json, name=args.name, issuer=args.issuer, secret=args.secret, backup=args.backup, phrase=args.phrase, force=args.force)
             if return_code == 0:
-                print("Successfully removed 2FA information.")
+                print("Successfully removed.")
             else:
-                print("Failed to remove 2FA information.")
+                print("Failed to remove.")
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)
@@ -92,22 +92,16 @@ def main():
             print(f"Error: {e}")
             sys.exit(1)
 
-    elif args.command == "get":
-        print("Not implemented yet.")
-        exit(1)
-        # try:
-        #     return_code = tool.get(json=args.json, name=args.name, issuer=args.issuer, secret=args.secret, backup=args.backup, phrase=args.phrase)
-        #     if return_code == 0:
-        #         print("Successfully retrieved 2FA information.")
-        #     else:
-        #         print("Failed to retrieve 2FA information.")
-        # except Exception as e:
-        #     print(f"Error: {e}")
-        #     sys.exit(1)
+    elif args.command == "get-qr":
+        try:
+            return_code = tool.get_qr(json=args.json, name=args.name, issuer=args.issuer, secret=args.secret, backup=args.backup, phrase=args.phrase)
+            if not return_code == 0:
+                print("Failed to retrieve QR code.")
+        except Exception as e:
+            print(f"Error: {e}")
+            sys.exit(1)
 
     elif args.command == "set":
-        # print("Not implemented yet.")
-        # exit(1)
         try:
             return_code = tool.set_file_directory(json=args.json, text=args.text)
             if return_code == 0:
