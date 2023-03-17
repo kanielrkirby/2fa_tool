@@ -1,8 +1,7 @@
 import json as JSON
 import os
-import io
 from config import config
-from fileutils import get_file_contents, write_file, create_qr_code
+from fileutils import get_file_contents, write_file, create_qr_code, test_json, get_data_list, test_txt
     
 class TwoFactorAuthTool:
     """
@@ -14,7 +13,7 @@ class TwoFactorAuthTool:
         Adds new 2FA information to the JSON file.
 
         Args:
-            json (str): The directory where the JSON file is located. Required.
+            json (str): The directory where the JSON file is located.
             name (str): The name of the account.
             issuer (str): The issuer of the 2FA.
             secret (str): The secret key for the 2FA.
@@ -25,28 +24,14 @@ class TwoFactorAuthTool:
         Returns:
             int: 0 if the operation is successful, 1 otherwise.
         """
-        json = json or config.get_json_directory()
-        if json is None:
-            print("Error: No JSON file specified. Pass --json [FILE]")
-            return 1
-        if not os.path.isfile(json):
-            print("File does not exist")
-            return 1
-        if not json.endswith(".json"):
-            print("File is not valid JSON")
-            return 1
 
-        contents = get_file_contents(json)
-        data_list: List[dict] = JSON.loads(contents)
-        for data in data_list:
-            if ("name" in data and data["name"] == name and name is not None) or \
-                    ("issuer" in data and data["issuer"] == issuer and issuer is not None) or \
-                    ("secret" in data and data["secret"] == secret and secret is not None) or \
-                    ("backup" in data and data["backup"] == backup and backup is not None) or \
-                    ("phrase" in data and data["phrase"] == phrase and phrase is not None):
-                    if not force:
-                        print("Duplicate data. Pass -f to force.")
-                        return 1
+        data_list = get_data_list(json, config)
+        duplicates = [data for data in data_list if (data["name"] == name and name is not None) or (data["issuer"] == issuer and issuer is not None) or (data["secret"] == secret and secret is not None) or (data["backup"] == backup and backup is not None) or (data["phrase"] == phrase and phrase is not None)]
+        if len(duplicates) > 0 and not force:
+            print("Duplicate data. Pass -f to force.")
+            return 1
+        
+
         obj = {"name": name}
         if issuer:
             obj["issuer"] = issuer
@@ -59,7 +44,7 @@ class TwoFactorAuthTool:
         data_list.append(obj)
         data_list.sort(key=lambda x: x["name"].lower())
 
-        write_file(json, JSON.dumps(data_list))
+        write_file(json, JSON.dumps(data_list), config)
 
         return 0
 
@@ -68,7 +53,7 @@ class TwoFactorAuthTool:
         Removes 2FA information from the JSON file.
 
         Args:
-            json (str): The directory where the JSON file is located. Required.
+            json (str): The directory where the JSON file is located.
             name (str): The name of the account.
             issuer (str): The issuer of the 2FA.
             secret (str): The secret key for the 2FA.
@@ -79,53 +64,69 @@ class TwoFactorAuthTool:
         Returns:
             int: 0 if the operation is successful, 1 otherwise.
         """
-        json = json or config.get_json_directory() or None
-        if not os.path.isfile(json) or not json.endswith(".json"):
-            return 1
-
-        contents = get_file_contents(json)
-        data_list = JSON.loads(contents)
-
-        new_data_list = [data for data in data_list if not (data.get("name") == name) or not (data.get("issuer") == issuer) or not (data.get("secret") == secret) or not (data.get("backup") == backup) or not (data.get("phrase") == phrase)]
+        data_list = get_data_list(json, config)
+        new_data_list = [data for data in data_list 
+            if (not data.get("name") == name and name is not None) or 
+            (not data.get("issuer") == issuer and issuer is not None) or 
+            (not data.get("secret") == secret and secret is not None) or 
+            (not data.get("backup") == backup and backup is not None) or 
+            (not data.get("phrase") == phrase and phrase is not None)]
         
-        if len(data_list) - len(new_data_list) > 1:
+        if len(data_list) - len(new_data_list) > 1 and not force:
             print("Too many objects removed. Pass -f to force.")
             return 1
 
-        write_file(json, JSON.dumps(data_list))
+        write_file(json, JSON.dumps(new_data_list), config)
         return 0
     
-    def set_file_directory(self, text: str, json: str) -> None:
+    def set_file_directory(self, text: str, json: str) -> int:
         """
-        Sets the directory where the JSON or TXT file is located.
+        Sets the default directory where the JSON or TXT file is located.
 
         Args:
             One of the following is required:
                 json (str): The directory where the JSON file is located.
                 text (str): The directory where the TXT file is located.
         """
-        if text:
-            if not os.path.isfile(text):
-                print("File/Directory does not exist")
-                return 1
-            config.set_txt_directory(text)
-        if json:
-            if not os.path.isfile(json):
-                print("File/Directory does not exist")
-                return 1
-            config.set_json_directory(json)
         if not text and not json:
             print("Must specify either text or json.")
             return 1
+        if text:
+            if not test_txt(text, config):
+                print("File/Directory does not exist, or is not valid.")
+                return 1
+            config.set_txt_directory(text)
+        if json:
+            if not test_json(json, config):
+                print("File/Directory does not exist, or is not valid.")
+                return 1
+            config.set_json_directory(json)
         return 0
-            
-    def update_text(self, json: str, text: str, name: str, issuer: str, secret: str, backup: str, phrase: str) -> int:
+
+    def unset_file_directory(self, json: bool, text: bool) -> int:
         """
-        Updates the TXT file with the latest 2FA information.
+        Unsets the default directory where the JSON and/or TXT file is located.
 
         Args:
-            json (str): The directory where the JSON file is located. Required.
-            text (str): The directory where the TXT file is located. Required.
+            One of the following is required:
+                json (bool): Flag to unset the JSON directory.
+                text (bool): Flag to unset the TXT directory.
+        """
+        if not json and not text:
+            print("Must specify either json or text.")
+            return 1
+        if json:
+            config.set_json_directory(None)
+        if text:
+            config.set_txt_directory(None)
+        return 0
+
+    def list_objects(self, json: str, name: str, issuer: str, secret: str, backup: str, phrase: str) -> int:
+        """
+        Lists all 2FA information in the JSON file.
+
+        Args:
+            json (str): The directory where the JSON file is located.
             name (str): The name of the account.
             issuer (str): The issuer of the 2FA.
             secret (str): The secret key for the 2FA.
@@ -135,19 +136,30 @@ class TwoFactorAuthTool:
         Returns:
             int: 0 if the operation is successful, 1 otherwise.
         """
-        json = json or config.get_json_directory() or None
-        text = text or config.get_txt_directory() or None
+        test_json(json, config)
+        
+            
+    def update_text(self, json: str, text: str) -> int:
+        """
+        Updates the TXT file with the latest 2FA information.
+
+        Args:
+            json (str): The directory where the JSON file is located. Required.
+            text (str): The directory where the TXT file is located. Required.
+
+        Returns:
+            int: 0 if the operation is successful, 1 otherwise.
+        """
         if json is None or text is None:
             print("No JSON/TXT file specified. Pass --json [FILE] --txt [FILE]")
             return 1
-        if not os.path.isfile(json):
-            print("File does not exist")
+        if not test_json(json, config):
+            print("JSON file does not exist, or is not valid.")
             return 1
-        if not json.endswith(".json"):
-            print("File is not valid JSON")
+        if not test_txt(text, config):
+            print("TXT file does not exist, or is not valid.")
             return 1
 
-        contents = get_file_contents(json)
         all_info = ""
         names = ""
         secrets = ""
@@ -162,12 +174,12 @@ class TwoFactorAuthTool:
         def title(t: str) -> str:
             return f"{div}\n{t}\n{div}"
 
-        data_list: List[dict] = JSON.loads(contents)
+        data_list = get_data_list(json, config)
         for data in data_list:
             name, issuer, secret, backup, phrase = data.get("name"), data.get("issuer"), data.get("secret"), data.get("backup"), data.get("phrase")
 
             link = f"otpauth://totp/{name}?secret={secret}&issuer={issuer}".replace(" ", "%20")
-            qr = self.create_qr_code(link)
+            qr = create_qr_code(link)
             all_info += f"{f'Name:       {name}{nl}' if name else ''}{f'Secret:     {secret}{nl}' if secret else ''}{f'Link:       {link}{nl}' if link else ''}{f'Backup:     {backup}{nl}' if backup else ''}{f'Phrase:     {phrase}{nl}' if phrase else ''}\n\n\n"
             secrets += f"{name}\n{secret}\n\n\n" if secret else ""
             links += f"{link}\n" if link else ""
@@ -177,7 +189,7 @@ class TwoFactorAuthTool:
             names += f"{name}\n" if name else ""
 
         TXT = f"\n{title('All')}\n\n{all_info}\n{div}{title('Secrets')}\n{secrets}\n{div}{title('Links')}\n{links}\n{div}{title('Backups')}\n{backups}\n{div}{title('Phrases')}\n{phrases}\n{div}{title('Names')}\n{names}\n{title('QR Codes')}\n{qrs}"
-        write_file(text, TXT)
+        write_file(text, TXT, config)
         return 0
     
     def get_qr(self, json: str, name: str, issuer: str, secret: str, backup: str, phrase: str):
@@ -195,9 +207,22 @@ class TwoFactorAuthTool:
         Returns:
             str: The QR code.
         """
-        json = json or config.get_json_directory() or None
-        if json is None:
-            print("No JSON file specified. Pass --json [FILE]")
+        if not test_json(json, config):
+            print("JSON file does not exist, or is not valid.")
             return 1
         
-        
+        contents = get_file_contents(json)
+        data_list = JSON.loads(contents)
+        specified = [data for data in data_list if 
+            (data["name"] == name and name is not None) or 
+            (data["issuer"] == issuer and issuer is not None) or 
+            (data["secret"] == secret and secret is not None) or 
+            (data["backup"] == backup and backup is not None) or 
+            (data["phrase"] == phrase and phrase is not None)]
+        for data in specified:
+            if not data.get("name") or not data.get("issuer") or not data.get("secret"):
+                print("All 2FA information must be in the JSON file.")
+                return 1
+            link = f"otpauth://totp/{data['name']}?secret={data['secret']}&issuer={data['issuer']}".replace(" ", "%20")
+            qr = create_qr_code(link)
+            print(f'{data["name"]}\n\n{qr}\n\n')

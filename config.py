@@ -1,14 +1,28 @@
 import os
 import json
+import sys
 
 class Config:
     """
     Configuration class for all the config related methods.
     """
     def __init__(self):
-        self.config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "config.json")
+        self.config_file = self.get_config_file_path()
         self.config = {}
         self.load_config()
+
+    def get_config_file_path(self):
+        if getattr(sys, 'frozen', False):
+            # The application is running as a frozen executable
+            try:
+                base_path = sys._MEIPASS
+            except AttributeError:
+                base_path = os.path.dirname(sys.executable)
+        else:
+            # The application is running as a script
+            base_path = os.path.dirname(os.path.realpath(__file__))
+        
+        return os.path.join(base_path, 'config.json')
 
     def load_config(self):
         """

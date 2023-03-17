@@ -55,6 +55,26 @@ def main():
     parser_set.add_argument("--json", help="Set the JSON file.")
     parser_set.add_argument("--text", help="Set the 2FA text file.")
 
+    # Unset parser
+    parser_unset = subparsers.add_parser("unset", help="Unset the default location of the TXT and/or JSON files.")
+    parser_unset.add_argument("--json", action="store_true", help="Flag to unset the JSON file location.")
+    parser_unset.add_argument("--text", action="store_true", help="Flag to unset the text file location.")
+
+    # List parser (list)
+    parser_list = subparsers.add_parser("list", help="List all 2FA objects in the JSON file.")
+    parser_list.add_argument("--json", help="Specify the JSON file.")
+
+    # List alias
+    parser_ls = subparsers.add_parser("ls", help="List all 2FA objects in the JSON file.")
+    parser_ls.add_argument("--json", help="Specify the JSON file.")
+    parser_ls.add_argument("--name", action="store_true", help="Flag to just receive the names of the account.")
+    parser_ls.add_argument("--issuer", action="store_true", help="Flag to just receive the issuers of the 2FA.")
+    parser_ls.add_argument("--secret", action="store_true", help="Flag to just receive the secrets key for 2FA.")
+    parser_ls.add_argument("--backup", action="store_true", help="Flag to just receive the backups codes for 2FA.")
+    parser_ls.add_argument("--phrase", action="store_true", help="Flag to just receive the phrases for 2FA (Like crypto wallet phrases).")
+
+    # Parse arguments
+
     args = parser.parse_args()
 
     tool = TwoFactorAuthTool()
@@ -83,7 +103,7 @@ def main():
 
     elif args.command == "update":
         try:
-            return_code = tool.update_text(json=args.json, text=args.text, name=args.name, issuer=args.issuer, secret=args.secret, backup=args.backup, phrase=args.phrase)
+            return_code = tool.update_text(json=args.json, text=args.text)
             if return_code == 0:
                 print("Successfully updated 2FA text file.")
             else:
@@ -108,6 +128,26 @@ def main():
                 print("Successfully set file location.")
             else:
                 print("Failed to set file location.")
+        except Exception as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+
+    elif args.command == "unset":
+        try:
+            return_code = tool.unset_file_directory(json=args.json, text=args.text)
+            if return_code == 0:
+                print("Successfully set file location.")
+            else:
+                print("Failed to set file location.")
+        except Exception as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+
+    elif args.command == "list" or args.command == "ls":
+        try:
+            return_code = tool.list_objects(json=args.json, name=args.name, issuer=args.issuer, secret=args.secret, backup=args.backup, phrase=args.phrase)
+            if not return_code == 0:
+                print("Failed to list 2FA objects.")
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)

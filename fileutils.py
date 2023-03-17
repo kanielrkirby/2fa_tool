@@ -1,4 +1,9 @@
-def get_file_contents(self, file_dir: str) -> str:
+import io
+import segno
+import json as JSON
+import os
+
+def get_file_contents(file_dir: str) -> str:
     """
     Gets the contents of a file.
 
@@ -8,14 +13,13 @@ def get_file_contents(self, file_dir: str) -> str:
     Returns:
         str: The contents of the file.
     """
-    file_dir = file_dir or config.get_json_directory()
     if file_dir is None:
         print("Error: No file directory specified. Pass --json [FILE]")
         return 1
     with open(file_dir, "r") as f:
         return f.read()
 
-def write_file(self, file_dir: str, new_contents: str):
+def write_file(file_dir: str, new_contents: str, config):
     """
     Writes new contents to a file.
 
@@ -30,9 +34,48 @@ def write_file(self, file_dir: str, new_contents: str):
     with open(file_dir, "w") as f:
         f.write(new_contents)
 
-def create_qr_code(self, link: str) -> str:
+    return 0
+
+def create_qr_code(link: str) -> str:
     out = io.StringIO()
     qr = segno.make(link)
     qr.terminal(out, compact=True, border=2)
     utf_code = out.getvalue()
     return utf_code
+
+def get_data_list(json: str, config) -> list:
+    if not test_json(json, config):
+        return 1
+    contents = get_file_contents(json)
+    data_list = JSON.loads(json)
+    return data_list
+
+def test_json(json: str, config) -> int:
+    json = json or config.get_json_directory() or None
+
+    if json is None:
+        print("No JSON file specified. Pass --json [FILE]")
+        return 1
+    if not os.path.isfile(json):
+        print("File does not exist")
+        return 1
+    if not json.endswith(".json"):
+        print("File is not valid JSON")
+        return 1
+    
+    return 0
+
+def test_txt(txt: str, config) -> int:
+    txt = txt or config.get_txt_directory() or None
+
+    if txt is None:
+        print("No TXT file specified. Pass --txt [FILE]")
+        return 1
+    if not os.path.isfile(txt):
+        print("File does not exist")
+        return 1
+    if not txt.endswith(".txt"):
+        print("File is not valid TXT")
+        return 1
+    
+    return 0
