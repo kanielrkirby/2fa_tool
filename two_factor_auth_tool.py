@@ -24,9 +24,16 @@ class TwoFactorAuthTool:
         Returns:
             int: 0 if the operation is successful, 1 otherwise.
         """
-
         data_list = get_data_list(json, config)
-        duplicates = [data for data in data_list if (data["name"] == name and name is not None) or (data["issuer"] == issuer and issuer is not None) or (data["secret"] == secret and secret is not None) or (data["backup"] == backup and backup is not None) or (data["phrase"] == phrase and phrase is not None)]
+        if data_list == 1:
+            print("Error. Something went wrong.")
+            return 1
+        duplicates = [data for data in data_list if 
+            (data["name"] == name and name is not None) or 
+            (data["issuer"] == issuer and issuer is not None) or 
+            (data["secret"] == secret and secret is not None) or 
+            (data["backup"] == backup and backup is not None) or 
+            (data["phrase"] == phrase and phrase is not None)]
         if len(duplicates) > 0 and not force:
             print("Duplicate data. Pass -f to force.")
             return 1
@@ -92,12 +99,14 @@ class TwoFactorAuthTool:
             print("Must specify either text or json.")
             return 1
         if text:
-            if not test_txt(text, config):
+            text = test_txt(text, config)
+            if not text:
                 print("File/Directory does not exist, or is not valid.")
                 return 1
             config.set_txt_directory(text)
         if json:
-            if not test_json(json, config):
+            json = test_json(json, config)
+            if not json:
                 print("File/Directory does not exist, or is not valid.")
                 return 1
             config.set_json_directory(json)
@@ -136,7 +145,10 @@ class TwoFactorAuthTool:
         Returns:
             int: 0 if the operation is successful, 1 otherwise.
         """
-        test_json(json, config)
+        json = test_json(json, config)
+        if not json:
+            print("JSON file does not exist, or is not valid.")
+            return 1
         
             
     def update_text(self, json: str, text: str) -> int:
@@ -153,10 +165,12 @@ class TwoFactorAuthTool:
         if json is None or text is None:
             print("No JSON/TXT file specified. Pass --json [FILE] --txt [FILE]")
             return 1
-        if not test_json(json, config):
+        json = test_json(json, config)
+        if not json:
             print("JSON file does not exist, or is not valid.")
             return 1
-        if not test_txt(text, config):
+        text = test_txt(text, config)
+        if not text:
             print("TXT file does not exist, or is not valid.")
             return 1
 
@@ -207,7 +221,8 @@ class TwoFactorAuthTool:
         Returns:
             str: The QR code.
         """
-        if not test_json(json, config):
+        json = test_json(json, config)
+        if not json:
             print("JSON file does not exist, or is not valid.")
             return 1
         

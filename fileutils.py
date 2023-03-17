@@ -44,26 +44,27 @@ def create_qr_code(link: str) -> str:
     return utf_code
 
 def get_data_list(json: str, config) -> list:
-    if not test_json(json, config):
-        return 1
-    contents = get_file_contents(json)
-    data_list = JSON.loads(json)
-    return data_list
-
-def test_json(json: str, config) -> int:
-    json = json or config.get_json_directory() or None
-
+    json = test_json(json, config)
     if json is None:
         print("No JSON file specified. Pass --json [FILE]")
         return 1
+    contents = get_file_contents(json)
+    data_list = JSON.loads(contents)
+    return data_list
+
+def test_json(json: str, config) -> str:
+    json = json or config.get_json_directory() or None
+    if json is None:
+        print("No JSON file specified. Pass --json [FILE]")
+        return None
     if not os.path.isfile(json):
         print("File does not exist")
-        return 1
+        return None
     if not json.endswith(".json"):
         print("File is not valid JSON")
-        return 1
+        return None
     
-    return 0
+    return json
 
 def test_txt(txt: str, config) -> int:
     txt = txt or config.get_txt_directory() or None
