@@ -88,9 +88,9 @@ class TwoFactorAuthTool:
         Returns:
             int: 0 if the operation is successful, 1 otherwise.
         """
-        file_dir = file_dir or config.get_json_directory()
-        if file_dir is None:
-            print("Error: No file directory specified. Pass --json [FILE]")
+        json = json or config.get_json_directory()
+        if json is None:
+            print("Error: No JSON file specified. Pass --json [FILE]")
             return 1
         if not self.test_file_exists(json):
             print("File does not exist")

@@ -55,9 +55,6 @@ def main():
     parser_set.add_argument("--json", help="Set the JSON file.")
     parser_set.add_argument("--text", help="Set the 2FA text file.")
 
-    # List parser
-    parser_list = subparsers.add_parser("list", help="List all 2FA objects in the JSON file. Requires JSON file.")
-
     args = parser.parse_args()
 
     tool = TwoFactorAuthTool()
