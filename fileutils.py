@@ -2,6 +2,8 @@ import io
 import segno
 import json as JSON
 import os
+import pyotp
+import time
 
 def get_file_contents(file_dir: str) -> str:
     """
@@ -80,3 +82,7 @@ def test_txt(txt: str, config) -> int:
         return 1
     
     return 0
+
+def gen_code(secret: str) -> str:
+    totp = pyotp.TOTP(secret)
+    return totp.now()

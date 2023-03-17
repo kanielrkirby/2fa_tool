@@ -1,7 +1,7 @@
 import json as JSON
 import os
 from config import config
-from fileutils import get_file_contents, write_file, create_qr_code, test_json, get_data_list, test_txt
+from fileutils import get_file_contents, write_file, create_qr_code, test_json, get_data_list, test_txt, gen_code
     
 class TwoFactorAuthTool:
     """
@@ -150,7 +150,29 @@ class TwoFactorAuthTool:
             print("JSON file does not exist, or is not valid.")
             return 1
         
-            
+        data_list = get_data_list(json, config)
+        if data_list == 1:
+            print("Error. Something went wrong.")
+            return 1
+
+        all = False
+        if not name and not issuer and not secret and not backup and not phrase:
+            all = True
+        
+        for data in data_list:
+            print(f"Name: {data['name']}")
+            if issuer or all:
+                print(f"Issuer: {data['issuer']}")
+            if secret or all:
+                print(f"Secret: {data['secret']}")
+            if backup or all:
+                print(f"Backup: {data['backup']}")
+            if phrase or all:
+                print(f"Phrase: {data['phrase']}")
+            print()
+
+        return 0
+        
     def update_text(self, json: str, text: str) -> int:
         """
         Updates the TXT file with the latest 2FA information.
@@ -241,3 +263,42 @@ class TwoFactorAuthTool:
             link = f"otpauth://totp/{data['name']}?secret={data['secret']}&issuer={data['issuer']}".replace(" ", "%20")
             qr = create_qr_code(link)
             print(f'{data["name"]}\n\n{qr}\n\n')
+            
+        return 0
+    
+    def code(self, json: str, name: str, secret: str):
+        """
+        Generates a code for the 2FA.
+
+        Args:
+            json (str): The directory where the JSON file is located. Required.
+            name (str): The name of the account you want to generate.
+            secret (str): The secret key for the 2FA.
+
+        Returns:
+            str: The code.
+        """
+        if secret is not None:
+            code = gen_code(secret)
+            print(f'{name} Code: {code}')
+            return 0
+
+        json = test_json(json, config)
+        if not json:
+            print("JSON file does not exist, or is not valid.")
+            return 1
+        
+        contents = get_file_contents(json)
+        data_list = JSON.loads(contents)
+        specified = [data for data in data_list if 
+            (data["name"] == name and name is not None) or 
+            (data["secret"] == secret and secret is not None)]
+        if len(specified) == 0:
+            print("Could not find 2FA information in the JSON file based on the name.")
+            return 1
+            
+        for data in specified:
+            code = gen_code(data["secret"])
+            print(f'{data["name"]} Code: {code}')
+
+        return 0
